@@ -1,5 +1,14 @@
 # Route Handlers
 
+## Table Content
+
+1. [Route Handlers](#route-handlers)
+2. [GET Request](#get-request)
+3. [POST Request](#post-request)
+4. [Dynamic Route Handlers](#dynamic-route-handlers)
+
+## Route Handlers
+
 ### Memori: Berbagai Jenis Rute dan File Khusus
 
 Kita telah membahas berbagai cara Next.js mengelola rute dan tampilan:
@@ -69,3 +78,268 @@ Sekarang, kita akan beralih dari rute yang menampilkan UI ke rute yang menangani
     - Dengan begitu, halaman HTML akan dilayani di `/profile`, dan _API endpoint_ akan tersedia di `/profile/api`.
 
 Route Handlers adalah fondasi penting untuk membangun _backend_ ringan atau _API layer_ langsung di dalam aplikasi Next.js Anda, memungkinkan Anda mengelola data dan logika _server_ dengan efisien.
+
+## GET Request
+
+### Memori: Route Handlers sebagai Backend
+
+Kita sudah membahas bahwa **Route Handlers** adalah cara kita membuat _backend_ (server-side) langsung di dalam proyek Next.js, memungkinkan kita membangun API _endpoint_ untuk berinteraksi dengan _database_, memproses data, atau mengakses API eksternal secara aman.
+
+Sekarang, kita akan melihat contoh praktis bagaimana membuat dan menguji _Route Handler_ untuk permintaan `GET`.
+
+---
+
+### Membuat dan Menguji Route Handler untuk Permintaan GET di Next.js
+
+Penjelasan ini akan fokus pada bagaimana Anda membuat Route Handler yang merespons permintaan `GET`, tanpa melibatkan pembangunan antarmuka pengguna (UI).
+
+#### Persiapan Data (Data In-Memory)
+
+Untuk tujuan demonstrasi dan kesederhanaan, kita akan menggunakan data yang disimpan langsung di dalam memori aplikasi. Perlu diingat bahwa data ini akan hilang setiap kali aplikasi di-_restart_ atau di-_refresh_. Dalam aplikasi nyata, data ini biasanya akan diambil dari _database_.
+
+1.  **Buat Folder `comments`:** Di dalam _folder_ `src` (atau langsung di `app`), buat sebuah _folder_ baru bernama `comments`.
+
+2.  **Buat _File_ Data:** Di dalam _folder_ `comments`, buat _file_ `data.ts` (atau `data.js`) untuk menyimpan _array_ contoh objek komentar. Setiap objek komentar akan memiliki `id` dan `text`.
+
+    **Contoh `src/comments/data.ts`:**
+
+    ```typescript
+    // src/comments/data.ts
+    interface Comment {
+      id: number;
+      text: string;
+    }
+
+    export const comments: Comment[] = [
+      { id: 1, text: "Ini komentar pertama." },
+      { id: 2, text: "Komentar kedua di sini." },
+      { id: 3, text: "Komentar ketiga Next.js." },
+    ];
+    ```
+
+#### Membuat Route Handler GET
+
+1.  **Buat _File_ `route.ts`:** Di dalam _folder_ `comments` yang sama, buat _file_ bernama `route.ts` (ini adalah konvensi Next.js untuk Route Handler).
+
+2.  **Impor Data:** Impor _array_ `comments` dari _file_ `data.ts` yang telah Anda buat.
+
+3.  **Ekspor Fungsi `GET` Asinkron:** Definisikan dan ekspor fungsi asinkron bernama `GET`. Fungsi ini akan otomatis dipanggil ketika ada permintaan `GET` ke _endpoint_ ini.
+
+4.  **Kembalikan Respons JSON:** Gunakan `Response.json()` untuk mengembalikan _array_ `comments` sebagai respons JSON.
+
+    **Contoh `src/comments/route.ts`:**
+
+    ```typescript
+    // src/comments/route.ts
+    import { comments } from "./data"; // Mengimpor data komentar
+    import { NextResponse } from "next/server"; // Menggunakan NextResponse untuk respons JSON
+
+    export async function GET() {
+      // Mengembalikan data komentar sebagai respons JSON
+      return NextResponse.json(comments);
+    }
+    ```
+
+#### Menguji Route Handler
+
+Karena kita tidak membangun UI, kita perlu alat untuk menguji _API endpoint_ ini. Salah satu alat yang populer adalah **Thunder Client** (ekstensi VS Code) atau Postman.
+
+1.  **Buka Thunder Client (atau Postman):** Buat permintaan baru.
+2.  **Setel Metode HTTP:** Pilih metode `GET`.
+3.  **Setel URL:** Masukkan URL _endpoint_ Anda, yaitu `http://localhost:3000/comments`.
+4.  **Kirim Permintaan:** Kirim permintaan tersebut.
+
+**Hasil yang Diharapkan:**
+
+Anda akan menerima status `200 OK` dan di bagian _body_ respons, Anda akan melihat _array_ komentar dalam format JSON:
+
+```json
+[
+  { "id": 1, "text": "Ini komentar pertama." },
+  { "id": 2, "text": "Komentar kedua di sini." },
+  { "id": 3, "text": "Komentar ketiga Next.js." }
+]
+```
+
+#### Aplikasi Dunia Nyata
+
+Meskipun kita menguji dengan Thunder Client, dalam aplikasi nyata, _Route Handler_ `GET` ini akan diakses oleh komponen _frontend_ Anda (misalnya, komponen React yang menggunakan `fetch` atau _library_ lain seperti `axios`) untuk mengambil data dan menampilkannya di UI. Misalnya, saat halaman komentar dimuat, komponen _client_ akan memanggil `/comments` untuk mendapatkan daftar komentar.
+
+Ini adalah langkah dasar untuk membuat _backend endpoint_ yang sederhana menggunakan Route Handlers di Next.js.
+
+## POST Request
+
+### Menggunakan Route Handler untuk Permintaan POST di Next.js
+
+Penjelasan ini akan menunjukkan langkah-langkah untuk membuat Route Handler yang dapat menerima dan memproses permintaan `POST`.
+
+#### Skenario Permintaan POST
+
+Dalam skenario ini, kita akan membuat _endpoint_ API untuk menambahkan komentar baru. Permintaan `POST` akan dikirimkan ke `http://localhost:3000/comments` dengan data komentar baru di dalam _body_ permintaan.
+
+1.  **Siapkan Permintaan POST:**
+
+    - Menggunakan alat seperti Thunder Client atau Postman, buat permintaan baru.
+    - Atur metode HTTP menjadi **`POST`**.
+    - Atur URL ke `http://localhost:3000/comments`.
+    - Di tab "Body", pilih format "JSON" dan masukkan data komentar baru, misalnya:
+      ```json
+      { "text": "Ini komentar baru!" }
+      ```
+    - Jika Anda mengirim permintaan ini sekarang tanpa Route Handler yang sesuai, Anda akan mendapatkan _error_ `405 Method Not Allowed`.
+
+2.  **Buat Route Handler POST:**
+
+    - Di dalam _file_ `route.ts` yang sama di _folder_ `comments` (yang sudah kita buat untuk permintaan `GET`), tambahkan fungsi asinkron baru bernama **`POST`**.
+    - Fungsi ini akan menerima objek `Request` standar sebagai parameter.
+
+3.  **Proses Data Permintaan:**
+
+    - Di dalam fungsi `POST`, gunakan `await request.json()` untuk mengekstrak data JSON yang dikirimkan di _body_ permintaan.
+    - Buat objek komentar baru. Berikan ID baru (misalnya, berdasarkan jumlah komentar yang sudah ada) dan gunakan teks dari data yang baru diterima.
+    - Tambahkan objek komentar baru ini ke _array_ `comments` yang sudah ada (ingat, ini hanya akan mengubah data di memori).
+
+    **Contoh Kode `src/comments/route.ts` (dengan fungsi POST):**
+
+    ```typescript
+    // src/comments/route.ts
+    import { comments } from "./data";
+    import { NextResponse } from "next/server";
+
+    export async function GET() {
+      return NextResponse.json(comments);
+    }
+
+    // Route Handler untuk permintaan POST
+    export async function POST(request: Request) {
+      // 1. Ekstrak data dari body permintaan
+      const newCommentData = await request.json();
+
+      // 2. Buat objek komentar baru dengan ID unik
+      const newComment = {
+        id: comments.length + 1,
+        text: newCommentData.text,
+      };
+
+      // 3. Tambahkan komentar baru ke array in-memory
+      comments.push(newComment);
+
+      // 4. Kirim respons
+      // Menggunakan NextResponse.json() untuk mengembalikan data dan status 201
+      return NextResponse.json(newComment, { status: 201 });
+    }
+    ```
+
+#### Mengirim Respons yang Tepat
+
+Saat membuat sumber daya baru melalui permintaan `POST`, status HTTP yang benar untuk dikembalikan adalah **`201 Created`**, bukan `200 OK`. `NextResponse.json()` memungkinkan Anda untuk dengan mudah mengatur status ini di dalam parameter kedua.
+
+#### Menguji Kembali
+
+Setelah Anda menambahkan fungsi `POST` ke Route Handler Anda:
+
+- Kirim kembali permintaan `POST` di Thunder Client. Anda akan mendapatkan status **`201 Created`** dan objek komentar baru di dalam _body_ respons.
+- Jika Anda mengirim permintaan `GET` ke `http://localhost:3000/comments`, Anda akan melihat komentar yang baru saja Anda tambahkan di dalam _array_.
+
+**Penting:** Perubahan ini hanya bersifat sementara (di memori). Jika Anda me-_refresh_ aplikasi, _array_ `comments` akan kembali ke kondisi awalnya.
+
+Ini adalah dasar dari bagaimana Route Handlers menangani permintaan `POST` untuk membuat sumber daya baru.
+
+## Dynamic Route Handlers
+
+### Memori: Route Handlers dan Parameter Dinamis
+
+Kita telah membahas bahwa **Route Handlers** berfungsi sebagai _backend_ di Next.js. Kita juga sudah tahu cara membuat _handler_ untuk permintaan `GET` dan `POST` yang bersifat statis (misalnya, `/comments`).
+
+Sekarang, kita akan melihat bagaimana Route Handlers menangani **parameter dinamis**, yaitu data yang menjadi bagian dari URL itu sendiri (misalnya, `/comments/1`, di mana `1` adalah parameter dinamis). Ini sangat penting karena memungkinkan kita untuk berinteraksi dengan sumber daya spesifik, seperti mengambil satu komentar berdasarkan ID-nya.
+
+Ini juga akan menjadi perbandingan yang menarik dengan `params` di komponen `page.tsx`. Di sana, `params` diterima sebagai _props_ langsung. Mari kita lihat bagaimana Route Handlers menanganinya.
+
+---
+
+### Membuat dan Mengakses Parameter Dinamis di Route Handlers (Permintaan GET)
+
+Penjelasan ini akan fokus pada bagaimana Anda membuat Route Handler yang dapat merespons permintaan `GET` dengan segmen URL yang dinamis, seperti ID sebuah item.
+
+#### Kebutuhan untuk Rute Dinamis
+
+Meskipun permintaan `GET` dan `POST` untuk koleksi item (misalnya, `/comments`) sudah jelas, permintaan `GET` untuk satu item spesifik (misalnya, komentar dengan ID tertentu) membutuhkan cara untuk mengidentifikasi item tersebut. Ini dilakukan dengan menambahkan segmen dinamis di URL, seperti `/comments/:id`.
+
+#### Cara Membuat Route Handler Dinamis
+
+1.  **Buat Folder Dinamis:** Sama seperti membuat rute halaman dinamis, Anda membuat _folder_ dengan nama segmen dinamis yang dibungkus dalam tanda kurung siku (misalnya, `[id]`) di dalam _folder_ rute yang relevan (misalnya, di dalam `comments`).
+
+2.  **Buat _File_ `route.ts`:** Di dalam _folder_ segmen dinamis ini, Anda membuat _file_ `route.ts`.
+
+    **Contoh Struktur Folder:**
+
+    ```
+    src/
+    └── comments/
+        ├── [id]/          <- Folder untuk rute dinamis
+        │   └── route.ts   <- Handler untuk /comments/:id
+        └── route.ts       <- Handler untuk /comments
+    ```
+
+#### Mengakses Parameter Rute
+
+- Fungsi _handler_ (misalnya, `GET`) akan menerima dua parameter: objek `request` dan objek `context`.
+
+- Objek `context` inilah yang berisi parameter rute (`params`). Objek `params` ini akan berisi segmen dinamis sebagai _key_ (misalnya, `id`) dengan nilainya sebagai _string_.
+
+- Anda dapat langsung mendestrukturisasi `id` dari `context.params`.
+
+  **Contoh Kode `src/comments/[id]/route.ts`:**
+
+  ```typescript
+  // src/comments/[id]/route.ts
+  import { comments } from "../data";
+  import { NextResponse } from "next/server";
+
+  // Handler menerima objek request dan context
+  export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+  ) {
+    const { id } = await params;
+
+    // Cari komentar yang sesuai dengan ID
+    const searchComment = comments.find(
+      (comment) => comment.id === toString(id)
+    );
+
+    // Jika komentar ditemukan, kirim respons JSON
+    if (searchComment) {
+      return NextResponse.json(searchComment);
+    }
+
+    // Jika tidak, kirim error 404
+    return new NextResponse("Komentar tidak ditemukan", { status: 404 });
+  }
+  ```
+
+#### Perbandingan dengan `page.tsx`
+
+Penting untuk diperhatikan, cara `params` diakses di Route Handler sedikit berbeda dari `page.tsx`.
+
+- **Di `page.tsx`:** `params` adalah _props_ langsung dari fungsi komponen.
+  ```typescript
+  export default function MyPage({ params }: { params: { id: string } }) {
+    /* ... */
+  }
+  ```
+- **Di Route Handler:** `params` adalah properti dari objek `context` yang merupakan parameter kedua dari fungsi handler.
+  ```typescript
+  export function GET(request: Request, context: { params: { id: string } }) {
+    /* ... */
+  }
+  ```
+
+#### Menguji Handler Dinamis
+
+Anda dapat menguji Route Handler dinamis ini menggunakan alat seperti Thunder Client atau Postman dengan mengirimkan permintaan `GET` ke URL yang berbeda:
+
+- Permintaan ke `http://localhost:3000/comments/1` akan mengembalikan komentar dengan ID `1`.
+- Permintaan ke `http://localhost:3000/comments/2` akan mengembalikan komentar dengan ID `2`.
+
+Memahami cara kerja rute dinamis untuk permintaan `GET` adalah fondasi untuk mengimplementasikan permintaan `PATCH` dan `DELETE` yang juga membutuhkan ID spesifik.
