@@ -6,8 +6,10 @@
 2. [GET Request](#get-request)
 3. [POST Request](#post-request)
 4. [Dynamic Route Handlers](#dynamic-route-handlers)
+5. [Handling PATCH Request](#handling-patch-request)
+6. [DELETE Request](#delete-request)
 
-## Route Handlers
+# Route Handlers
 
 ### Memori: Berbagai Jenis Rute dan File Khusus
 
@@ -79,7 +81,7 @@ Sekarang, kita akan beralih dari rute yang menampilkan UI ke rute yang menangani
 
 Route Handlers adalah fondasi penting untuk membangun _backend_ ringan atau _API layer_ langsung di dalam aplikasi Next.js Anda, memungkinkan Anda mengelola data dan logika _server_ dengan efisien.
 
-## GET Request
+# GET Request
 
 ### Memori: Route Handlers sebagai Backend
 
@@ -167,7 +169,7 @@ Meskipun kita menguji dengan Thunder Client, dalam aplikasi nyata, _Route Handle
 
 Ini adalah langkah dasar untuk membuat _backend endpoint_ yang sederhana menggunakan Route Handlers di Next.js.
 
-## POST Request
+# POST Request
 
 ### Menggunakan Route Handler untuk Permintaan POST di Next.js
 
@@ -245,7 +247,7 @@ Setelah Anda menambahkan fungsi `POST` ke Route Handler Anda:
 
 Ini adalah dasar dari bagaimana Route Handlers menangani permintaan `POST` untuk membuat sumber daya baru.
 
-## Dynamic Route Handlers
+# Dynamic Route Handlers
 
 ### Memori: Route Handlers dan Parameter Dinamis
 
@@ -343,3 +345,155 @@ Anda dapat menguji Route Handler dinamis ini menggunakan alat seperti Thunder Cl
 - Permintaan ke `http://localhost:3000/comments/2` akan mengembalikan komentar dengan ID `2`.
 
 Memahami cara kerja rute dinamis untuk permintaan `GET` adalah fondasi untuk mengimplementasikan permintaan `PATCH` dan `DELETE` yang juga membutuhkan ID spesifik.
+
+# Handling PATCH Request
+
+### Route Handlers: Memproses Permintaan PATCH
+
+Kita telah membahas Route Handlers untuk permintaan `GET` (mengambil data) dan `POST` (menambahkan data baru). Sekarang, kita akan melihat cara menangani permintaan **`PATCH`**, yang digunakan untuk melakukan **modifikasi parsial** pada sebuah sumber daya yang sudah ada.
+
+#### Skenario Permintaan PATCH
+
+Permintaan `PATCH` sangat berguna ketika Anda ingin memperbarui hanya beberapa properti dari sebuah objek, bukan seluruh objek. Dalam contoh ini, kita akan memperbarui properti `text` dari sebuah komentar berdasarkan ID-nya.
+
+1.  **Siapkan Permintaan PATCH:**
+
+    - Menggunakan alat seperti Thunder Client atau Postman, atur metode HTTP menjadi **`PATCH`**.
+    - Atur URL agar menargetkan sumber daya spesifik yang ingin diperbarui, misalnya `http://localhost:3000/comments/3` untuk komentar dengan ID 3.
+    - Di tab "Body" (format JSON), sediakan properti yang ingin diperbarui.
+
+    **Contoh Body Permintaan:**
+
+    ```json
+    {
+      "text": "Komentar ini sudah diperbarui."
+    }
+    ```
+
+2.  **Buat Route Handler PATCH:**
+
+    - Di dalam _file_ `route.ts` yang sama (di _folder_ `[id]`), tambahkan fungsi asinkron baru bernama **`PATCH`**.
+    - Fungsi ini akan menerima objek `request` dan `context` sebagai parameter.
+    - Ekstrak `id` dari `context.params` dan teks yang diperbarui dari _body_ `request` dengan `await request.json()`.
+
+3.  **Memperbarui Data:**
+
+    - Gunakan `Array.prototype.findIndex()` pada _array_ komentar untuk menemukan **indeks** dari komentar yang ID-nya cocok dengan ID yang diberikan di URL.
+    - Perbarui properti `text` dari objek komentar di indeks yang ditemukan dengan teks baru dari _body_ permintaan.
+
+    **Contoh Kode `src/comments/[id]/route.ts` (dengan fungsi PATCH):**
+
+    ```typescript
+    // src/comments/[id]/route.ts
+    import { comments } from "../../data";
+    import { NextResponse } from "next/server";
+
+    // ... (Fungsi GET sebelumnya)
+
+    export async function PATCH(
+      request: Request,
+      context: { params: { id: string } }
+    ) {
+      const { id } = context.params;
+      const { text } = await request.json();
+
+      const index = comments.findIndex((c) => c.id.toString() === id);
+
+      if (index !== -1) {
+        comments[index].text = text;
+        return NextResponse.json(comments[index]);
+      }
+
+      // Jika ID tidak ditemukan, kembalikan error 404
+      return new NextResponse("Komentar tidak ditemukan", { status: 404 });
+    }
+    ```
+
+4.  **Mengirim Respons yang Tepat:**
+
+    - Setelah pembaruan berhasil, kembalikan komentar yang sudah diperbarui sebagai respons JSON dengan status **`200 OK`**. Status ini menandakan bahwa permintaan berhasil dan sumber daya telah dimodifikasi.
+
+#### Menguji Kembali
+
+- Setelah menambahkan fungsi `PATCH`, kirim permintaan PATCH Anda di Thunder Client. Anda akan mendapatkan status `200 OK` dan objek komentar yang sudah diperbarui di _body_ respons.
+- Lakukan permintaan `GET` ke _endpoint_ `/comments` untuk melihat _array_ komentar lengkap dan memverifikasi bahwa komentar yang relevan sudah diperbarui.
+
+**Penting:** Perlu diingat bahwa perubahan ini, sama seperti permintaan `POST` sebelumnya, hanya terjadi di **memori** dan akan hilang saat aplikasi di-_restart_. Untuk penyimpanan permanen, Anda akan menggunakan _database_.
+
+# DELETE Request
+
+### Memori: Mengimplementasikan `GET`, `POST`, dan `PATCH`
+
+Kita telah membahas cara membuat _Route Handlers_ untuk **`GET`** (mengambil koleksi atau item tunggal), **`POST`** (menambah item baru), dan **`PATCH`** (memperbarui item secara parsial). Kita juga sudah memahami cara kerja `findIndex` untuk menemukan posisi item di dalam _array_.
+
+Sekarang, kita akan melengkapi operasi CRUD dengan `DELETE`.
+
+---
+
+### Route Handlers: Memproses Permintaan DELETE
+
+Permintaan **`DELETE`** digunakan untuk **menghapus** sebuah sumber daya yang spesifik. Sama seperti `GET` dan `PATCH` untuk satu item, `DELETE` juga menggunakan parameter dinamis di URL untuk mengidentifikasi item yang akan dihapus.
+
+#### Skenario Permintaan DELETE
+
+Kita akan membuat _endpoint_ API untuk menghapus komentar berdasarkan ID-nya.
+
+1.  **Siapkan Permintaan DELETE:**
+
+    - Menggunakan alat seperti Thunder Client atau Postman, atur metode HTTP menjadi **`DELETE`**.
+    - Atur URL agar menargetkan sumber daya spesifik yang ingin dihapus, misalnya `http://localhost:3000/comments/3` untuk menghapus komentar dengan ID 3.
+    - Permintaan `DELETE` **tidak membutuhkan _body_**, jadi Anda bisa membiarkannya kosong.
+    - Jika Anda mengirim permintaan ini sekarang, Anda akan mendapatkan _error_ `405 Method Not Allowed` karena _handler_-nya belum dibuat.
+
+2.  **Buat Route Handler DELETE:**
+
+    - Di dalam _file_ `route.ts` yang sama (di _folder_ `[id]`), tambahkan fungsi asinkron baru bernama **`DELETE`**.
+    - Fungsi ini akan menerima objek `request` dan `context` sebagai parameter.
+    - Ekstrak `id` dari `context.params` untuk mengetahui komentar mana yang harus dihapus.
+
+3.  **Menghapus Data:**
+
+    - Gunakan `Array.prototype.findIndex()` untuk mencari **indeks** dari komentar yang akan dihapus.
+    - Jika komentar ditemukan (`index !== -1`), simpan komentar tersebut ke variabel sementara (`deletedComment`). Ini berguna jika Anda ingin mengembalikan informasi item yang baru saja dihapus di respons.
+    - Gunakan `Array.prototype.splice()` untuk menghapus komentar dari _array_ berdasarkan indeksnya. `splice(index, 1)` berarti "mulai dari `index`, hapus 1 item".
+
+    **Contoh Kode `src/comments/[id]/route.ts` (dengan fungsi DELETE):**
+
+    ```typescript
+    // src/comments/[id]/route.ts
+    import { comments } from "../../data";
+    import { NextResponse } from "next/server";
+
+    // ... (Fungsi GET, PATCH sebelumnya)
+
+    export async function DELETE(
+      request: Request,
+      context: { params: { id: string } }
+    ) {
+      const { id } = context.params;
+
+      const index = comments.findIndex((c) => c.id.toString() === id);
+
+      // Pastikan komentar ditemukan sebelum dihapus
+      if (index === -1) {
+        return new NextResponse("Komentar tidak ditemukan", { status: 404 });
+      }
+
+      const deletedComment = comments[index];
+      comments.splice(index, 1);
+
+      // Kembalikan komentar yang dihapus sebagai respons
+      return NextResponse.json(deletedComment);
+    }
+    ```
+
+4.  **Mengirim Respons yang Tepat:**
+
+    - Setelah penghapusan berhasil, kembalikan item yang dihapus sebagai respons JSON dengan status **`200 OK`** (atau `204 No Content` jika Anda tidak ingin mengembalikan _body_).
+
+#### Menguji Kembali
+
+- Kirim permintaan `DELETE` di Thunder Client. Anda akan mendapatkan status `200 OK` dan objek komentar yang sudah dihapus di dalam _body_ respons.
+- Lakukan permintaan `GET` ke _endpoint_ `/comments` untuk melihat bahwa komentar yang relevan sudah tidak ada lagi di dalam _array_.
+
+**Penting:** Sama seperti sebelumnya, perubahan ini hanya terjadi di **memori** dan akan hilang saat aplikasi di-_restart_. Untuk penyimpanan permanen, Anda akan menggunakan _database_.
